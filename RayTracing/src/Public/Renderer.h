@@ -17,7 +17,7 @@ namespace RayTracingApp
 		std::shared_ptr<Walnut::Image> GetFinalImage() const { return finalImage; }
 	private:
 
-		uint32_t PerPixel(glm::vec2 coord);
+		glm::vec4 PerPixel(glm::vec2 coord);
 
 		std::shared_ptr<Walnut::Image> finalImage;
 		uint32_t* imageData = nullptr;

@@ -4,6 +4,22 @@
 
 namespace RayTracingApp
 {
+	namespace Utils
+	{
+		uint32_t ConvertToRGBA(const glm::vec4& color)
+		{
+			glm::clamp(color, glm::vec4(0), glm::vec4(1));
+			uint8_t r = (color.r * 255.0f);
+			uint8_t g = (color.g * 255.0f);
+			uint8_t b = (color.b * 255.0f);
+			uint8_t a = (color.a * 255.0f);
+
+			// Converting to uint32 (RBGA -> AGBR) ex : ffff0000 = blue
+			uint32_t result = (a << 24) | (b << 16) | (g << 8) | r;
+			return result;
+		}
+	}
+
 	void Renderer::OnResize(uint32_t width, uint32_t height)
 	{
 		if (finalImage)
@@ -37,19 +53,22 @@ namespace RayTracingApp
 				};
 				coord = coord * 2.0f - 1.0f; // Remap from 0 -> 1 to -1 -> 1;
 
-				imageData[x + y * finalImage->GetWidth()] = PerPixel(coord);
+				glm::vec4 color = PerPixel(coord);
+				imageData[x + y * finalImage->GetWidth()] = Utils::ConvertToRGBA(color);
 			}
 		}
 
 		finalImage->SetData(imageData);
 	}
 
-	uint32_t Renderer::PerPixel(glm::vec2 coord)
+	glm::vec4 Renderer::PerPixel(glm::vec2 coord)
 	{
-		glm::vec3 rayOrigin(0.0f, 0.0f, 2.0f);
+		float aspectRatio = finalImage->GetWidth() / (float)finalImage->GetHeight();
+		coord.x *= aspectRatio;
+
+		glm::vec3 rayOrigin(0.0f, 0.0f, 1.0f);
 		glm::vec3 rayDirection(coord.x, coord.y, -1.0f);
 		float radius = 0.5f;
-		//rayDirection = glm::normalize(rayDirection);
 
 		//(bx^2 + by^2)t^2 + (2(axbx + ayby))t + (ax^2 + ay^2 - r^2) = 0
 		// a = ray origin
@@ -62,11 +81,29 @@ namespace RayTracingApp
 		float c = glm::dot(rayOrigin, rayOrigin) - radius * radius;
 
 		// descriminant (b^2 - 4ac)
+		// t = (b^2 +- sqrt(det)) / (2a)
 		float discriminant = b * b - 4.0f * a * c;
+		if (discriminant < 0.0f)
+			return glm::vec4(0, 0, 0, 1);
 
-		if (discriminant >= 0.0f)
-			return 0xffff00ff;
 
-		return 0xff000000;
+		// Getting instersections points
+		float t0 = (-b + glm::sqrt(discriminant)) / (2.0f * a);
+		float closestT = (-b - glm::sqrt(discriminant)) / (2.0f * a);
+
+		glm::vec3 hitPoint = rayOrigin + rayDirection * closestT;
+
+		// Calculating the normal
+		glm::vec3 normal = glm::normalize(hitPoint);
+
+		glm::vec3 lighDir = glm::normalize(glm::vec3(-1, -1, -1));
+
+		float d = glm::max(glm::dot(normal, -lighDir), 0.0f); // == cos(angle)
+
+		// Outputing the color
+		glm::vec3 sphereColor(1, 0, 1);
+		sphereColor *= d;
+		return glm::vec4(sphereColor,1);
+
 	}
 }
