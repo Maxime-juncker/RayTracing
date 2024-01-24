@@ -5,6 +5,7 @@
 #include "Walnut/Timer.h"
 
 #include "Public/Renderer.h"
+#include "Public/Camera.h"
 
 using namespace Walnut;
 using namespace RayTracingApp;
@@ -12,6 +13,13 @@ using namespace RayTracingApp;
 class ExampleLayer : public Walnut::Layer
 {
 public:
+	ExampleLayer() : camera(45.0f, 0.1f, 100.0f) {}
+
+	virtual void OnUpdate(float ts) override
+	{
+		camera.OnUpdate(ts);
+	}
+
 	virtual void OnUIRender() override
 	{
 		ImGui::Begin("Settings");
@@ -49,7 +57,8 @@ public:
 		Timer timer;
 
 		renderer.OnResize(viewportWidth, viewportHeight);
-		renderer.Render();
+		camera.OnResize(viewportWidth, viewportHeight);
+		renderer.Render(camera);
 
 		lastRenderTime = timer.ElapsedMillis();
 	}
@@ -57,7 +66,7 @@ public:
 private:
 	Renderer renderer;
 	uint32_t viewportWidth = 0, viewportHeight = 0;
-
+	Camera camera;
 	float lastRenderTime = 0;
 };
 
@@ -65,8 +74,8 @@ Walnut::Application* Walnut::CreateApplication(int argc, char** argv)
 {
 	Walnut::ApplicationSpecification spec;
 	spec.Name = "Jen Tracing";
-	spec.Height = 600;
-	spec.Width = 800;
+	spec.Height = 800;
+	spec.Width = 1000;
 
 	Walnut::Application* app = new Walnut::Application(spec);
 	app->PushLayer<ExampleLayer>();
