@@ -19,10 +19,10 @@ public:
 	{
 		Material& pinkSphere = scene.Materials.emplace_back();
 		pinkSphere.Albedo = { 0.0f, 1.0f, 0.2f };
-		pinkSphere.Roughness = 0.0f;
+		pinkSphere.Roughness = 0.1f;
 		Material& blueSphere = scene.Materials.emplace_back();
 		blueSphere.Albedo = { 0.2f, 0.3f, 1.0f };
-		blueSphere.Roughness = 0.1f;
+		blueSphere.Roughness = 0.5f;
 
 		{
 			Sphere sphere;
@@ -45,19 +45,30 @@ public:
 
 	virtual void OnUpdate(float ts) override
 	{
-		camera.OnUpdate(ts);
+		
+		if (camera.OnUpdate(ts))
+			renderer.ResetFrameIndex();
 	}
 
 	virtual void OnUIRender() override
 	{
 		ImGui::Begin("Settings");
 		ImGui::Text("Last render: %.3fms", lastRenderTime);
+		ImGui::Text("current accumulated frame %d", renderer.GetAccumulatedFrameIndex());
 		ImGui::Text("width: %d", viewportWidth);
 		ImGui::Text("height: %d", viewportHeight);
 		if (ImGui::Button("Render"))
 		{
 			Render();
 		}
+
+		ImGui::Checkbox("Acculumate", &renderer.GetSettings().Accumulate);
+
+		if (ImGui::Button("Reset"))
+		{
+			renderer.ResetFrameIndex();
+		}
+
 		ImGui::End();
 
 		ImGui::Begin("Scene");
@@ -133,8 +144,8 @@ Walnut::Application* Walnut::CreateApplication(int argc, char** argv)
 {
 	Walnut::ApplicationSpecification spec;
 	spec.Name = "Jen Tracing";
-	spec.Height = 800;
-	spec.Width = 1100;
+	spec.Height = 700;
+	spec.Width = 950;
 
 	Walnut::Application* app = new Walnut::Application(spec);
 	app->PushLayer<ExampleLayer>();
