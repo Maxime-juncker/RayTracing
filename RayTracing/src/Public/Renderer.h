@@ -48,6 +48,8 @@ namespace RayTracingApp
 		const Scene* activeScene = nullptr;
 		const Camera* activeCamera = nullptr;
 
+		std::vector<uint32_t> imageHorizontalIter, imageVerticalIter;
+
 		Settings settings;
 
 		std::shared_ptr<Walnut::Image> finalImage;

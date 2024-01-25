@@ -1,6 +1,7 @@
 #include "../Public/Renderer.h"
 #include "Walnut/Random.h"
 #include <iostream>
+#include <execution>
 
 namespace RayTracingApp
 {
@@ -39,6 +40,16 @@ namespace RayTracingApp
 
 		delete[] accumulationData;
 		accumulationData = new glm::vec4[width * height];
+
+		imageHorizontalIter.resize(width);
+		imageVerticalIter.resize(height);
+
+		for (uint32_t i = 0; i < width; i++)
+			imageHorizontalIter[i] = i;
+		
+		for (uint32_t i = 0; i < height; i++)
+			imageVerticalIter[i] = i;
+		
 	}
 
 	void Renderer::Render(const Scene& scene, const Camera& camera)
@@ -49,8 +60,26 @@ namespace RayTracingApp
 		{
 			memset(accumulationData, 0, 
 				finalImage->GetWidth() * finalImage->GetHeight() * sizeof(glm::vec4));
-			
 		}
+
+#define MT 1
+#if MT
+		std::for_each(std::execution::par, imageVerticalIter.begin(), imageVerticalIter.end(),
+			[this](uint32_t y)
+			{
+				for (uint32_t x = 0; x < finalImage->GetWidth(); x++)
+				{
+					glm::vec4 color = PerPixel(x, y);
+					accumulationData[x + y * finalImage->GetWidth()] += color;
+
+					glm::vec4 accumulatedColor = accumulationData[x + y * finalImage->GetWidth()];
+					accumulatedColor /= (float)frameIndex;
+
+					accumulatedColor = glm::clamp(accumulatedColor, glm::vec4(0), glm::vec4(1));
+					imageData[x + y * finalImage->GetWidth()] = Utils::ConvertToRGBA(accumulatedColor);
+				}
+			});
+#else
 
 		// Render every pixels
 		for (uint32_t y = 0; y < finalImage->GetHeight(); y++)
@@ -67,6 +96,7 @@ namespace RayTracingApp
 				imageData[x + y * finalImage->GetWidth()] = Utils::ConvertToRGBA(accumulatedColor);
 			}
 		}
+#endif
 
 		finalImage->SetData(imageData);
 
