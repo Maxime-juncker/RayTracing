@@ -16,6 +16,7 @@ namespace RayTracingApp
 		struct Settings
 		{
 			bool Accumulate = true;
+			bool Multithreading = true;
 		};
 
 	public:

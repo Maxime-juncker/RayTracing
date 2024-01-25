@@ -63,6 +63,7 @@ public:
 		}
 
 		ImGui::Checkbox("Acculumate", &renderer.GetSettings().Accumulate);
+		ImGui::Checkbox("Multithrading", &renderer.GetSettings().Multithreading);
 
 		if (ImGui::Button("Reset"))
 		{

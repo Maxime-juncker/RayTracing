@@ -62,14 +62,32 @@ namespace RayTracingApp
 				finalImage->GetWidth() * finalImage->GetHeight() * sizeof(glm::vec4));
 		}
 
-#define MT 1
-#if MT
-		std::for_each(std::execution::par, imageVerticalIter.begin(), imageVerticalIter.end(),
-			[this](uint32_t y)
+		// Render every pixels
+		if (settings.Multithreading)
+		{
+			std::for_each(std::execution::par, imageVerticalIter.begin(), imageVerticalIter.end(),
+				[this](uint32_t y)
+				{
+					for (uint32_t x = 0; x < finalImage->GetWidth(); x++)
+					{
+						glm::vec4 color = PerPixel(x, y);
+						accumulationData[x + y * finalImage->GetWidth()] += color;
+
+						glm::vec4 accumulatedColor = accumulationData[x + y * finalImage->GetWidth()];
+						accumulatedColor /= (float)frameIndex;
+
+						accumulatedColor = glm::clamp(accumulatedColor, glm::vec4(0), glm::vec4(1));
+						imageData[x + y * finalImage->GetWidth()] = Utils::ConvertToRGBA(accumulatedColor);
+					}
+				});
+		}
+		else
+		{
+			for (uint32_t y = 0; y < finalImage->GetHeight(); y++)
 			{
 				for (uint32_t x = 0; x < finalImage->GetWidth(); x++)
 				{
-					glm::vec4 color = PerPixel(x, y);
+					glm::vec4 color = PerPixel(x,y);
 					accumulationData[x + y * finalImage->GetWidth()] += color;
 
 					glm::vec4 accumulatedColor = accumulationData[x + y * finalImage->GetWidth()];
@@ -78,25 +96,9 @@ namespace RayTracingApp
 					accumulatedColor = glm::clamp(accumulatedColor, glm::vec4(0), glm::vec4(1));
 					imageData[x + y * finalImage->GetWidth()] = Utils::ConvertToRGBA(accumulatedColor);
 				}
-			});
-#else
-
-		// Render every pixels
-		for (uint32_t y = 0; y < finalImage->GetHeight(); y++)
-		{
-			for (uint32_t x = 0; x < finalImage->GetWidth(); x++)
-			{
-				glm::vec4 color = PerPixel(x,y);
-				accumulationData[x + y * finalImage->GetWidth()] += color;
-
-				glm::vec4 accumulatedColor = accumulationData[x + y * finalImage->GetWidth()];
-				accumulatedColor /= (float)frameIndex;
-
-				accumulatedColor = glm::clamp(accumulatedColor, glm::vec4(0), glm::vec4(1));
-				imageData[x + y * finalImage->GetWidth()] = Utils::ConvertToRGBA(accumulatedColor);
 			}
+
 		}
-#endif
 
 		finalImage->SetData(imageData);
 
