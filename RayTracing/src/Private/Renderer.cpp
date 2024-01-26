@@ -18,6 +18,28 @@ namespace RayTracingApp
 			uint32_t result = (a << 24) | (b << 16) | (g << 8) | r;
 			return result;
 		}
+
+		// Random number generator
+		static uint32_t PCG_Hash(uint32_t input)
+		{
+			uint32_t state = input * 747796405u + 2891336453u;
+			uint32_t word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
+			return (word >> 22u) ^ word;
+		}
+
+		static float RandomFloat(uint32_t& seed)
+		{
+			seed = PCG_Hash(seed);
+			return (float)seed / (float)UINT32_MAX;
+		}
+
+		static glm::vec3 InUnitSphere(uint32_t& seed)
+		{
+			return glm::normalize(glm::vec3(
+				RandomFloat(seed) * 2.0f - 1.0f, 
+				RandomFloat(seed) * 2.0f - 1.0f, 
+				RandomFloat(seed) * 2.0f - 1.0f));
+		}
 	}
 
 	void Renderer::OnResize(uint32_t width, uint32_t height)
@@ -114,17 +136,22 @@ namespace RayTracingApp
 		ray.Origin = activeCamera->GetPosition();
 		ray.Direction = activeCamera->GetRayDirections()[x + y * finalImage->GetWidth()];
 
-		glm::vec3 color(0.0f);
-		float multiplier = 1.0f;
+		glm::vec3 light(0.0f);
+		glm::vec3 contribution(1.0f);
+
+		uint32_t seed = x + y * finalImage->GetWidth();
+		seed *= frameIndex;
 
 		int bounces = 5;
 		for (int i = 0; i < bounces; i++)
 		{
+			seed += i;
+
 			Renderer::HitPayload payload = TraceRay(ray);
 			if (payload.HitDistance < 0) // Sky color
 			{
 				glm::vec3 skyColor(0.6f, 0.7f, 0.9f);
-				color += skyColor * multiplier;
+				light += skyColor * contribution;
 				break;
 			}
 
@@ -133,18 +160,18 @@ namespace RayTracingApp
 
 			const Sphere& sphere = activeScene->Spheres[payload.OjectIndex];
 			const Material& material = activeScene->Materials[sphere.MaterialIndex];
-			// Outputing the color
-			glm::vec3 sphereColor = material.Albedo;
-			sphereColor *= lightIntensity;
-			color += sphereColor * multiplier;
 
-			multiplier *= 0.5f;
+			// Outputing the color
+			contribution *= material.Albedo;
+			light += material.GetEmission();
 
 			ray.Origin = payload.WorldPosition + payload.WorldNormal * 0.0001f;
-			ray.Direction = glm::reflect(ray.Direction, 
-				payload.WorldNormal + material.Roughness * Walnut::Random::Vec3(-0.5f, 0.5f));
+			if (settings.SlowRandom)
+				ray.Direction = glm::normalize(payload.WorldNormal + Walnut::Random::InUnitSphere());
+			else
+				ray.Direction = glm::normalize(payload.WorldNormal + Utils::InUnitSphere(seed));
 		}
-		return glm::vec4(color, 1);
+		return glm::vec4(light, 1);
 	}
 
 	Renderer::HitPayload Renderer::TraceRay(const Ray& ray)

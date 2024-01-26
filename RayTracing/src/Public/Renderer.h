@@ -17,6 +17,7 @@ namespace RayTracingApp
 		{
 			bool Accumulate = true;
 			bool Multithreading = true;
+			bool SlowRandom = false;
 		};
 
 	public:

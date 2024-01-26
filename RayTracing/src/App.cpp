@@ -17,13 +17,26 @@ class ExampleLayer : public Walnut::Layer
 public:
 	ExampleLayer() : camera(45.0f, 0.1f, 100.0f) 
 	{
-		Material& pinkSphere = scene.Materials.emplace_back();
-		pinkSphere.Albedo = { 0.0f, 1.0f, 0.2f };
-		pinkSphere.Roughness = 0.1f;
-		Material& blueSphere = scene.Materials.emplace_back();
-		blueSphere.Albedo = { 0.2f, 0.3f, 1.0f };
-		blueSphere.Roughness = 0.5f;
+		// Creating materials
+		Material& basicSphere = scene.Materials.emplace_back();
+		basicSphere.Albedo = { 0.0f, 1.0f, 0.2f };
+		basicSphere.Roughness = 0.6f;
 
+		Material& pinkSphere = scene.Materials.emplace_back();
+		pinkSphere.Albedo = { 0.6f, 0.0f, 1.0f };
+		pinkSphere.Roughness = 0.6f;
+
+		Material& ground = scene.Materials.emplace_back();
+		ground.Albedo = { 0.7f, 0.7f, 0.7f };
+		ground.Roughness = 0.1f;
+
+		Material& sun = scene.Materials.emplace_back();
+		sun.Albedo = { 0.8f, 0.5f, 0.2f };
+		sun.Roughness = 0.1f;
+		sun.EmissionColor = sun.Albedo;
+		sun.EmissionPower = 3.5f;
+
+		// Instantiating spheres
 		{
 			Sphere sphere;
 			sphere.Position = { 0.0f, 0.0f, 0.0f };
@@ -34,9 +47,25 @@ public:
 		}
 		{
 			Sphere sphere;
+			sphere.Position = { -3.3f, 0.1f, 1.2f };
+			sphere.Radius = 1.4f;
+			sphere.MaterialIndex = 1;
+
+			scene.Spheres.push_back(sphere);
+		}
+		{
+			Sphere sphere;
 			sphere.Position = { 0.0f, -101.0f, 0.0f };
 			sphere.Radius = 100.0f;
-			sphere.MaterialIndex = 1;
+			sphere.MaterialIndex = 2;
+
+			scene.Spheres.push_back(sphere);
+		}
+		{
+			Sphere sphere;
+			sphere.Position = { 42.0f, 4.0f, 2.0f };
+			sphere.Radius = 20.0f;
+			sphere.MaterialIndex = 3;
 
 			scene.Spheres.push_back(sphere);
 		}
@@ -64,6 +93,7 @@ public:
 
 		ImGui::Checkbox("Acculumate", &renderer.GetSettings().Accumulate);
 		ImGui::Checkbox("Multithrading", &renderer.GetSettings().Multithreading);
+		ImGui::Checkbox("Slow random", &renderer.GetSettings().SlowRandom);
 
 		if (ImGui::Button("Reset"))
 		{
@@ -95,6 +125,9 @@ public:
 			ImGui::ColorEdit3("Albedo", glm::value_ptr(material.Albedo));
 			ImGui::DragFloat("Roughness", &material.Roughness, 0.05f, 0.0f, 1.0f);
 			ImGui::DragFloat("Metallic", &material.Metallic, 0.05f, 0.0f, 1.0f);
+
+			ImGui::ColorEdit3("Emision color", glm::value_ptr(material.EmissionColor));
+			ImGui::DragFloat("Emision Power", &material.EmissionPower, 0.05f, 0.0f, FLT_MAX);
 
 			ImGui::Separator();
 			ImGui::PopID();
